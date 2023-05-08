@@ -4,6 +4,12 @@ local util = require'blunder.util'
 
 function M.setup(cfg)
     M.formats = cfg.formats
+    vim.api.nvim_create_user_command('Brun', function(opts)
+        require'blunder'.run(opts.args)
+    end, {
+        nargs = 1,
+        complete = 'shellcmd',
+    })
 end
 
 function M.create_window_for_terminal()
