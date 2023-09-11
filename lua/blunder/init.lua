@@ -44,12 +44,40 @@ function M.sink_for_command(cmd)
     if error_format == nil then
         error_format = vim.o.errorformat
     end
+    local squash_invalids = {}
     return function(lines)
         local qf_items = vim.fn.getqflist {
             efm = error_format,
             lines = util.clean_lines_from_pty(lines),
-        }
-        vim.fn.setqflist(qf_items.items, 'a')
+        }.items or {}
+        if squash_invalids then
+            local first_valid_idx = nil
+            for idx, item in ipairs(qf_items) do
+                if item.valid == 1 then
+                    first_valid_idx = idx
+                    break
+                end
+            end
+            if first_valid_idx then
+                first_valid_idx = first_valid_idx + #squash_invalids
+                vim.list_extend(squash_invalids, qf_items)
+                qf_items = squash_invalids
+                squash_invalids= nil
+                local invalid_item = qf_items[1]
+                local valid_item = qf_items[first_valid_idx]
+                do
+                    local tmp = invalid_item.text
+                    invalid_item.text = valid_item.text
+                    valid_item.text = tmp
+                end
+                qf_items[1] = valid_item
+                qf_items[first_valid_idx] = invalid_item
+            else
+                vim.list_extend(squash_invalids, qf_items)
+                return
+            end
+        end
+        vim.fn.setqflist(qf_items, 'a')
     end
 end
 
@@ -61,6 +89,7 @@ function M.run_in_current_window(cmd)
         end,
     })
 end
+
 function M.run(cmd)
     M.create_window_for_terminal()
     M.run_in_current_window(cmd)
