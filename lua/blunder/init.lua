@@ -38,10 +38,22 @@ function M.format_for_command(cmd)
     return M.formats[cmd[1]]
 end
 
-function M.sink_for_command(cmd)
+---@class BlunderSinkOpts
+---@field fmt? string An error format for the sink
+---@field cmd? string|string[] A command to derive the error format from
+
+---@param opts BlunderSinkOpts
+function M.sink(opts)
     vim.fn.setqflist({}, 'r')
-    local error_format = M.format_for_command(cmd)
-    if error_format == nil then
+    local error_format
+    if opts.fmt ~= nil then
+        error_format = opts.fmt
+    elseif opts.cmd ~= nil then
+        error_format = M.format_for_command(opts.cmd)
+        if error_format == nil then
+            error_format = vim.o.errorformat
+        end
+    else
         error_format = vim.o.errorformat
     end
     local squash_invalids = {}
@@ -81,8 +93,19 @@ function M.sink_for_command(cmd)
     end
 end
 
-function M.run_in_current_window(cmd)
-    local sink = M.sink_for_command(cmd)
+---@class BlunderRunOpts
+---@field fmt? string An error format
+
+---@param cmd string|string[] A command to run
+---@param opts? BlunderSinkOpts
+function M.run_in_current_window(cmd, opts)
+    if opts == nil then
+        opts = {}
+    end
+    local sink = M.sink{
+        cmd = cmd,
+        fmt = opts.fmt,
+    }
     vim.fn.termopen(cmd, {
         on_stdout = function(_, data, _)
             sink(data)
@@ -90,9 +113,44 @@ function M.run_in_current_window(cmd)
     })
 end
 
-function M.run(cmd)
+---@param cmd string|string[] A command to run
+---@param opts? BlunderSinkOpts
+function M.run(cmd, opts)
     M.create_window_for_terminal()
-    M.run_in_current_window(cmd)
+    M.run_in_current_window(cmd, opts)
+end
+
+---@param opts? BlunderSinkOpts
+function M.for_channelot(opts)
+    if opts ~= nil and opts.job_id and opts.command then
+        -- Assume opts is the job
+        return M.for_channelot()(opts)
+    end
+    return function(job)
+        vim.validate {
+            job={job, function(j)
+                if type(j) ~= 'table' then
+                    return false
+                end
+                return type(j.job_id) == 'number' and j.command ~= nil
+            end, 'ChannelotJob'}
+        }
+        if opts == nil then
+            opts = {}
+        end
+        if opts.cmd == nil then
+            opts = vim.tbl_extend('error', { cmd = job.command }, opts)
+        end
+        local sink = M.sink(opts)
+        local function handler(_, data)
+            sink(data)
+        end
+        if job.pty then
+            table.insert(job.callbacks.stdout, handler)
+        else
+            table.insert(job.callbacks.stderr, handler)
+        end
+    end
 end
 
 return M
