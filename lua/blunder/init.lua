@@ -12,13 +12,45 @@ local function gen_cmd_completion_function(prefix)
     end
 end
 
+-- This is a default fallback format, generated from the default errorformat you get in `nvim -u NONE`
+M.fallback_format = table.concat({
+    [=[%*[^"]"%f"%*\D%l: %m]=],
+    [=["%f"%*\D%l: %m]=],
+    [=[%-G%f:%l: (Each undeclared identifier is reported only once]=],
+    [=[%-G%f:%l: for each function it appears in.)]=],
+    [=[%-GIn file included from %f:%l:%c:]=],
+    [=[%-GIn file included from %f:%l:%c\,]=],
+    [=[%-GIn file included from %f:%l:%c]=],
+    [=[%-GIn file included from %f:%l]=],
+    [=[%-G%*[ ]from %f:%l:%c]=],
+    [=[%-G%*[ ]from %f:%l:]=],
+    [=[%-G%*[ ]from %f:%l\,]=],
+    [=[%-G%*[ ]from %f:%l]=],
+    [=[%f:%l:%c:%m]=],
+    [=[%f(%l):%m]=],
+    [=[%f:%l:%m]=],
+    [=["%f"\,line %l%*\D%c%*[^ ] %m]=],
+    [=[%D%*\a[%*\d]: Entering directory %*[`']%f']=],
+    [=[%X%*\a[%*\d]: Leaving directory %*[`']%f']=],
+    [=[%D%*\a: Entering directory %*[`']%f']=],
+    [=[%X%*\a: Leaving directory %*[`']%f']=],
+    [=[%DMaking %*\a in %f]=],
+    [=[%f|%l| %m]=],
+}, ',')
+
 ---@class BlunderConfig
 ---@field formats { [string]: string }
+---@field fallback_format? string
 ---@field commands_prefix? string|false
 
 ---@param cfg BlunderConfig
 function M.setup(cfg)
-    M.formats = cfg.formats
+    if cfg.formats then
+        M.formats = cfg.formats
+    end
+    if cfg.fallback_format then
+        M.fallback_format = cfg.fallback_format
+    end
 
     if cfg.commands_prefix ~= false then
         local commands_prefix = cfg.commands_prefix or 'B'
@@ -55,7 +87,14 @@ function M.format_for_command(cmd)
     if type(cmd) == 'string' then
         cmd = vim.split(cmd, '%s')
     end
-    return M.formats[cmd[1]]
+    local format = M.formats[cmd[1]]
+    if format == nil then
+        format = M.fallback_format
+        if format == nil then
+            error('Blunder knows no error format for ' .. vim.inspect(cmd) .. ', and no fallback_format is configured')
+        end
+    end
+    return format
 end
 
 ---@class BlunderSinkOpts
@@ -70,11 +109,11 @@ function M.sink(opts)
         error_format = opts.fmt
     elseif opts.cmd ~= nil then
         error_format = M.format_for_command(opts.cmd)
-        if error_format == nil then
-            error_format = vim.o.errorformat
-        end
     else
-        error_format = vim.o.errorformat
+        error_format = M.fallback_format
+        if error_format == nil then
+            error('Sink has neither `fmt` nor `cmd`, and no fallback_format is configured')
+        end
     end
     local squash_invalids = {}
     return function(lines)
