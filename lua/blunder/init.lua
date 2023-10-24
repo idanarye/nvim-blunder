@@ -2,13 +2,29 @@ local M = {}
 
 local util = require'blunder.util'
 
+local function gen_cmd_completion_function(prefix)
+    return function(_, cmdline, loc)
+        vim.cmd.messages('clear')
+        local pattern_to_complete = cmdline:sub(1, loc)
+        local _, really_start_from = pattern_to_complete:find('%s*%S+')
+        local real_pattern = prefix .. pattern_to_complete:sub(really_start_from + 1)
+        return vim.fn.getcompletion(real_pattern, 'cmdline')
+    end
+end
+
 function M.setup(cfg)
     M.formats = cfg.formats
     vim.api.nvim_create_user_command('Brun', function(opts)
         require'blunder'.run(opts.args)
     end, {
         nargs = 1,
-        complete = 'shellcmd',
+        complete = gen_cmd_completion_function('!'),
+    })
+    vim.api.nvim_create_user_command('Bmake', function(opts)
+        require'blunder'.make(opts.args)
+    end, {
+        nargs = '?',
+        complete = gen_cmd_completion_function('make'),
     })
 end
 
@@ -93,19 +109,9 @@ function M.sink(opts)
     end
 end
 
----@class BlunderRunOpts
----@field fmt? string An error format
-
 ---@param cmd string|string[] A command to run
----@param opts? BlunderSinkOpts
-function M.run_in_current_window(cmd, opts)
-    if opts == nil then
-        opts = {}
-    end
-    local sink = M.sink{
-        cmd = cmd,
-        fmt = opts.fmt,
-    }
+---@param sink function(data: string[])
+function M.impl(cmd, sink)
     vim.fn.termopen(cmd, {
         on_stdout = function(_, data, _)
             sink(data)
@@ -113,11 +119,44 @@ function M.run_in_current_window(cmd, opts)
     })
 end
 
+---@class BlunderRunOpts
+---@field fmt? string An error format
+
+function M.sink_for_run_command(cmd, opts)
+    if opts == nil then
+        opts = {}
+    end
+    return M.sink{
+        cmd = cmd,
+        fmt = opts.fmt,
+    }
+end
+
 ---@param cmd string|string[] A command to run
----@param opts? BlunderSinkOpts
+---@param opts? BlunderRunOpts
 function M.run(cmd, opts)
+    local sink = M.sink_for_run_command(cmd, opts)
     M.create_window_for_terminal()
-    M.run_in_current_window(cmd, opts)
+    M.impl(cmd, sink)
+end
+
+---@param makeprg_args? string|string[] Arguments for makeprg
+function M.make(makeprg_args)
+    local cmd
+    if makeprg_args == nil then
+        cmd = vim.fn.expandcmd(vim.o.makeprg)
+    elseif type(makeprg_args) == 'string' then
+        cmd = vim.fn.expandcmd(vim.o.makeprg .. ' ' .. makeprg_args)
+    else
+        cmd = table.concat({
+            vim.fn.expandcmd(vim.o.makeprg),
+            unpack(vim.tbl_map(vim.fn.shellescape, makeprg_args)),
+        }, ' ')
+    end
+
+    local sink = M.sink { fmt = vim.o.errorformat }
+    M.create_window_for_terminal()
+    M.impl(cmd, sink)
 end
 
 ---@param opts? BlunderSinkOpts
