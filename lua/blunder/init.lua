@@ -12,20 +12,24 @@ local function gen_cmd_completion_function(prefix)
     end
 end
 
+---@class BlunderConfig
+---@field formats { [string]: string }
+---@field commands_prefix? string|false
+
+---@param cfg BlunderConfig
 function M.setup(cfg)
     M.formats = cfg.formats
-    vim.api.nvim_create_user_command('Brun', function(opts)
-        require'blunder'.run(opts.args)
-    end, {
-        nargs = 1,
-        complete = gen_cmd_completion_function('!'),
-    })
-    vim.api.nvim_create_user_command('Bmake', function(opts)
-        require'blunder'.make(opts.args)
-    end, {
-        nargs = '?',
-        complete = gen_cmd_completion_function('make'),
-    })
+
+    if cfg.commands_prefix ~= false then
+        local commands_prefix = cfg.commands_prefix or 'B'
+
+        vim.api.nvim_create_user_command(commands_prefix .. 'run', function(opts)
+            require'blunder'.run(opts.args)
+        end, {nargs = 1, complete = gen_cmd_completion_function('!')})
+        vim.api.nvim_create_user_command(commands_prefix .. 'make', function(opts)
+            require'blunder'.make(opts.args)
+        end, {nargs = '?', complete = gen_cmd_completion_function('make')})
+    end
 end
 
 function M.create_window_for_terminal()
