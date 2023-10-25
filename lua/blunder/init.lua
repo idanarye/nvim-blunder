@@ -184,7 +184,7 @@ function M.format_for_command(cmd)
 end
 
 ---@class BlunderSinkOpts
----@field fmt? string An error format for the sink
+---@field efm? string An error format for the sink
 ---@field cmd? string|string[] A command to derive the error format from
 
 ---Start a new empty quickfix list, and return a function that can be used to update it.
@@ -196,14 +196,14 @@ end
 function M.sink(opts)
     vim.fn.setqflist({}, 'r')
     local error_format
-    if opts.fmt ~= nil then
-        error_format = opts.fmt
+    if opts.efm ~= nil then
+        error_format = opts.efm
     elseif opts.cmd ~= nil then
         error_format = M.format_for_command(opts.cmd)
     else
         error_format = M.fallback_format
         if error_format == nil then
-            error('Sink has neither `fmt` nor `cmd`, and no fallback_format is configured')
+            error('Sink has neither `efm` nor `cmd`, and no fallback_format is configured')
         end
     end
     local squash_invalids = {}
@@ -260,7 +260,7 @@ function M.impl(cmd, sink)
 end
 
 ---@class BlunderRunOpts
----@field fmt? string An error format
+---@field efm? string An error format
 
 ---Generate a sink for running a command.
 ---
@@ -273,7 +273,7 @@ function M.sink_for_run_command(cmd, opts)
     end
     return M.sink{
         cmd = cmd,
-        fmt = opts.fmt,
+        efm = opts.efm,
     }
 end
 
@@ -308,7 +308,7 @@ function M.make(makeprg_args)
         }, ' ')
     end
 
-    local sink = M.sink { fmt = vim.o.errorformat }
+    local sink = M.sink { efm = vim.o.errorformat }
     M.create_window_for_terminal()
     M.impl(cmd, sink)
 end
