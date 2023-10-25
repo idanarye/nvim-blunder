@@ -118,7 +118,7 @@ M.fallback_format = table.concat({
 }, ',')
 
 ---@class BlunderConfig
----@field formats { [string]: string } Formats for specific commands (based on the executable without the arguments).
+---@field formats? { [string]: string } Formats for specific commands (based on the executable without the arguments).
 ---@field fallback_format? string The format to use if the command does not match any specific format.
 ---@field commands_prefix? string|false Defaults to 'B'.
 
