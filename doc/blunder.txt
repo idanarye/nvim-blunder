@@ -1,0 +1,152 @@
+==============================================================================
+Blunder - Populate the quickfix from interactive terminal jobs         *blunder*
+
+Neovim's |:make| command can parse the output from a shell command to
+generate entries for the |quickfix| list. |:make| uses the non-interactive
+shell, which means that:
+* The Neovim UI is blocked while the command is running.
+* Some compilers or build tools offer nice PTY features like colors and
+  progress bars. These don't work with |:make|.
+* No stdin (so it can't, for example, parse exceptions from REPLs)
+* The command output cannot stay open when Neovim's event loop is back. The
+  data may still be accessible from the quickfix list, but it would be
+  processed.
+
+Blunder allows using Neovim's builtin interactive |terminal| for the same
+purpose. This means that the build commands can fully utilize the PTY, and
+that the terminal buffer remains open and the text in it can be searched and
+scrolled using Neovim's full power.
+
+                                                          *blunder-installation*
+                                                               *blunder.formats*
+When setting up blunder in |init.lua|, you can set up formats for various
+compilers and build commands:
+>
+ require'blunder'.setup {
+     formats = {
+         -- These formats are copied from the builtin runtime/compiler/*.vim files
+         go = table.concat({
+             [=[%-G# %.%#]=],
+             [=[%A%f:%l:%c: %m]=],
+             [=[%A%f:%l: %m]=],
+             [=[%C%*\s%m]=],
+             [=[%-G%.%#]=],
+         }, ','),
+         perl = table.concat({
+             [=[%-G%.%#had compilation errors.]=],
+             [=[%-G%.%#syntax OK]=],
+             [=[%m at %f line %l.]=],
+             [=[%+A%.%# at %f line %l\]=],
+             [=[%.%#]=],
+             [=[%+C%.%#]=],
+         }, ','),
+     },
+ },
+<
+Then, invoking |Brun| with "go" or "perl" as the program will use the
+registered error format. Note that invoking |Brun| with some unregistered
+program will use the fallback format (which defaults to Neovim's default
+'errorformat', which is quite big), and that |Bmake| does not use these
+formats - it always uses the 'errorformat' of the buffer it was called from.
+
+BlunderConfig                                                    *BlunderConfig*
+
+    Fields: ~
+        {formats}  ()
+
+
+M.setup({cfg})                                                   *blunder.setup*
+    Configure Blunder and create the Vim commands.
+
+    Parameters: ~
+        {cfg}  (BlunderConfig)
+
+
+                                                                         *:Brun*
+The Brun command
+
+M.create_window_for_terminal()              *blunder.create_window_for_terminal*
+    Create a new window that tries to replicate the |:!| / |:make| UX but with terminal jobs.
+
+    * When the terminal window is closed, the focus will return (if possible) to
+      the original window from which this function was invoked.
+    * Automatically goes into insert mode inside the new window.
+    * Does not actually start the terminal.
+
+
+M.format_for_command({cmd})                         *blunder.format_for_command*
+    Pick the error format suitable for the given command
+
+    Parameters: ~
+        {cmd}  (string|string[])
+
+    Returns: ~
+        (string)
+
+
+BlunderSinkOpts                                                *BlunderSinkOpts*
+
+    Fields: ~
+        {fmt?}  (string)           An error format for the sink
+        {cmd?}  (string|string[])  A command to derive the error format from
+
+
+M.sink({opts})                                                    *blunder.sink*
+    Start a new empty quickfix list, and return a function that can be used to update it.
+
+    The function should be called with the data passed by Neovim to as the
+    second argument for on_stdout/on_stderr when creating a terminal.
+
+    Parameters: ~
+        {opts}  (BlunderSinkOpts)  @return function(data: string[])
+
+
+M.impl()                                                          *blunder.impl*
+
+
+BlunderRunOpts                                                  *BlunderRunOpts*
+
+    Fields: ~
+        {fmt?}  (string)  An error format
+
+
+M.sink_for_run_command({cmd}, {opts?})            *blunder.sink_for_run_command*
+    Generate a sink for running a command.
+
+    |blunder.run| uses this behind the scenes.
+
+    Parameters: ~
+        {cmd}    (string|string[])  The command to prepare the sink for.
+        {opts?}  (BlunderRunOpts)
+
+
+M.run({cmd}, {opts?})                                              *blunder.run*
+    Run a terminal job in a new window, parsing the output into a quickfix list.
+
+    The error format will be determined by the command, unless overridden in the
+    opts argument.
+
+    Parameters: ~
+        {cmd}    (string|string[])  A command to run
+        {opts?}  (BlunderRunOpts)
+
+
+M.make({makeprg_args?})                                           *blunder.make*
+    Similar to |blunder.run|, but uses the |:make| configuration.
+
+    * The command will run using the 'makeprg' of the active buffer. The content
+      of the makeprg_args will be appended to it.
+    * The output will parsed using the 'errorformat' of the active buffer.
+
+    Parameters: ~
+        {makeprg_args?}  (string|string[])  Arguments for makeprg
+
+
+M.for_channelot({opts?})                                 *blunder.for_channelot*
+    Pass to |ChannelotJob:using| to parse output from a Channelot job into the quickfix list.
+
+    Parameters: ~
+        {opts?}  (BlunderSinkOpts)
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:
