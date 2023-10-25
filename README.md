@@ -1,4 +1,4 @@
-[![CI Status](https://github.com/idanarye/nvim-blunder/workflows/CI/badge.svg)](https://github.com/idanarye/blunder/actions)
+[![CI Status](https://github.com/idanarye/nvim-blunder/workflows/CI/badge.svg)](https://github.com/idanarye/nvim-blunder/actions)
 
 INTRODUCTION
 ============
