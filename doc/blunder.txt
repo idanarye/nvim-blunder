@@ -18,6 +18,26 @@ that the terminal buffer remains open and the text in it can be searched and
 scrolled using Neovim's full power.
 
                                                           *blunder-installation*
+Install "idanarye/nvim-blunder" using your favorite plugin manager, and in
+your |init.lua| call:
+>
+ require'blunder'.setup {
+     -- Default settings
+     formats = {},
+     fallback_format = ..., -- reducted - its very long
+     commands_prefix = 'B',
+ }
+<
+This will configure Blunder register the commands |:Bmake| and |:Brun|.
+
+                                                                 *blunder-usage*
+* |:Bmake| works like |:make| but uses a terminal.
+* |blunder.make| - Lua API version of |:Bmake|.
+* |:Brun| - run any shell command in a terminal, and deduce the desired
+            error format from |blunder.formats|.
+* |blunder.run| - Lua API version of |:Brun|. Also supports manually setting
+                  the error format.
+
                                                                *blunder.formats*
 When setting up blunder in |init.lua|, you can set up formats for various
 compilers and build commands:
@@ -43,10 +63,10 @@ compilers and build commands:
      },
  },
 <
-Then, invoking |Brun| with "go" or "perl" as the program will use the
-registered error format. Note that invoking |Brun| with some unregistered
+Then, invoking |:Brun| with "go" or "perl" as the program will use the
+registered error format. Note that invoking |:Brun| with some unregistered
 program will use the fallback format (which defaults to Neovim's default
-'errorformat', which is quite big), and that |Bmake| does not use these
+'errorformat', which is quite big), and that |:Bmake| does not use these
 formats - it always uses the 'errorformat' of the buffer it was called from.
 
 BlunderConfig                                                    *BlunderConfig*
@@ -63,7 +83,14 @@ M.setup({cfg})                                                   *blunder.setup*
 
 
                                                                          *:Brun*
-The Brun command
+The `:Brun` command runs a shell command in a new terminal window,
+parsing its output into the quickfix list using an error format
+deduced from the command itself (see |blunder.formats|)
+
+                                                                        *:Bmake*
+The `:Bmake` runs the 'makeprg' shell command in a terminal, parsing
+its output into the quickfix list using Neovim's normal
+'errorformat' option.
 
 M.create_window_for_terminal()              *blunder.create_window_for_terminal*
     Create a new window that tries to replicate the |:!| / |:make| UX but with terminal jobs.
@@ -87,7 +114,7 @@ M.format_for_command({cmd})                         *blunder.format_for_command*
 BlunderSinkOpts                                                *BlunderSinkOpts*
 
     Fields: ~
-        {fmt?}  (string)           An error format for the sink
+        {efm?}  (string)           An error format for the sink
         {cmd?}  (string|string[])  A command to derive the error format from
 
 
@@ -107,7 +134,7 @@ M.impl()                                                          *blunder.impl*
 BlunderRunOpts                                                  *BlunderRunOpts*
 
     Fields: ~
-        {fmt?}  (string)  An error format
+        {efm?}  (string)  An error format
 
 
 M.sink_for_run_command({cmd}, {opts?})            *blunder.sink_for_run_command*
@@ -124,7 +151,7 @@ M.run({cmd}, {opts?})                                              *blunder.run*
     Run a terminal job in a new window, parsing the output into a quickfix list.
 
     The error format will be determined by the command, unless overridden in the
-    opts argument.
+    opts argument: `require'blunder'.run('gcc main.c', { efm = '...' })`
 
     Parameters: ~
         {cmd}    (string|string[])  A command to run
