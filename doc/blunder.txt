@@ -72,7 +72,7 @@ formats - it always uses the 'errorformat' of the buffer it was called from.
 BlunderConfig                                                    *BlunderConfig*
 
     Fields: ~
-        {formats}  ()
+        {formats?}  ()
 
 
 M.setup({cfg})                                                   *blunder.setup*

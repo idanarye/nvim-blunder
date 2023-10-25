@@ -11,6 +11,8 @@ Neovim's `:make` command can parse the output from a shell command to generate e
 
 Blunder allows using Neovim's builtin interactive terminal for the same purpose. This means that the build commands can fully utilize the PTY, and that the terminal buffer remains open and the text in it can be searched and scrolled using Neovim's full power.
 
+[![asciicast](https://asciinema.org/a/617133.svg)](https://asciinema.org/a/617133)
+
 INSTALLATION
 ============
 
