@@ -1,4 +1,7 @@
 [![CI Status](https://github.com/idanarye/nvim-blunder/workflows/CI/badge.svg)](https://github.com/idanarye/nvim-blunder/actions)
+<a href="https://dotfyle.com/plugins/idanarye/nvim-blunder">
+  <img src="https://dotfyle.com/plugins/idanarye/nvim-blunder/shield" />
+</a>
 
 INTRODUCTION
 ============
