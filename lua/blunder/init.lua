@@ -157,16 +157,28 @@ function M.setup(cfg)
     end
 end
 
+---@class BlunderCreateWindowForTerminalOpts
+---@field bufnr? number Use an existing buffer instead of creating a new one
+
 ---Create a new window that tries to replicate the |:!| / |:make| UX but with terminal jobs.
 ---
 ---* When the terminal window is closed, the focus will return (if possible) to
 ---  the original window from which this function was invoked.
 ---* Automatically goes into insert mode inside the new window.
 ---* Does not actually start the terminal.
-function M.create_window_for_terminal()
+---
+---@param opts? BlunderCreateWindowForTerminalOpts
+function M.create_window_for_terminal(opts)
+    opts = opts or {}
     local prev_win_id = vim.fn.win_getid(vim.fn.winnr())
     vim.cmd'botright 20new'
-    local bufnr = vim.api.nvim_get_current_buf()
+    local bufnr
+    if opts.bufnr then
+        bufnr = opts.bufnr
+        vim.api.nvim_win_set_buf(0, bufnr)
+    else
+        bufnr = vim.api.nvim_get_current_buf()
+    end
     vim.api.nvim_create_autocmd('WinEnter', {
         buffer = bufnr,
         callback = function()

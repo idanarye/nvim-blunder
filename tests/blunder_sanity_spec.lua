@@ -35,7 +35,6 @@ describe('Blunder sanity', function()
     end)
 
     it('blunder.run with custom error format', function()
-        blunder.create_window_for_terminal()
         blunder.run({'echo', 'mymodule:42:7', 'something something'}, {
             efm = [=[%o:%l:%c %m]=]
         })

@@ -92,13 +92,23 @@ The `:Bmake` runs the 'makeprg' shell command in a terminal, parsing
 its output into the quickfix list using Neovim's normal
 'errorformat' option.
 
-M.create_window_for_terminal()              *blunder.create_window_for_terminal*
+BlunderCreateWindowForTerminalOpts          *BlunderCreateWindowForTerminalOpts*
+
+    Fields: ~
+        {bufnr?}  (number)  Use an existing buffer instead of creating a new one
+
+
+M.create_window_for_terminal({opts?})       *blunder.create_window_for_terminal*
     Create a new window that tries to replicate the |:!| / |:make| UX but with terminal jobs.
 
     * When the terminal window is closed, the focus will return (if possible) to
       the original window from which this function was invoked.
     * Automatically goes into insert mode inside the new window.
     * Does not actually start the terminal.
+
+
+    Parameters: ~
+        {opts?}  (BlunderCreateWindowForTerminalOpts)
 
 
 M.format_for_command({cmd})                         *blunder.format_for_command*
