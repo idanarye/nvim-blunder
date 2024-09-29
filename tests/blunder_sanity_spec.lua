@@ -49,5 +49,34 @@ describe('Blunder sanity', function()
         assert(qf[1].col == 7)
         assert(qf[1].text == 'something something')
     end)
+
+    for _, c in ipairs{
+        {cmd = 'Brun', modifies_qf = true },
+        {cmd = 'Bexecute', modifies_qf = false },
+    }
+    do
+        local test_text = c.cmd .. ' does'
+        if not c.modifies_qf then
+            test_text = test_text .. ' not'
+        end
+        test_text = test_text .. ' modify the quickfix list'
+        it(test_text, function()
+            local function get_qf_text_only()
+                return vim.iter(vim.fn.getqflist())
+                :map(function(item)
+                    return item.text
+                end)
+                :totable()
+            end
+            vim.fn.setqflist({{text = 'test'}})
+            assert.are.same(get_qf_text_only(), {'test'})
+            vim.cmd[c.cmd]('ls')
+            if c.modifies_qf then
+                assert.are.same(get_qf_text_only(), {})
+            else
+                assert.are.same(get_qf_text_only(), {'test'})
+            end
+        end)
+    end
 end)
 

@@ -154,6 +154,18 @@ function M.setup(cfg)
         vim.api.nvim_create_user_command(commands_prefix .. 'make', function(opts)
             require'blunder'.make(opts.args)
         end, {nargs = '?', complete = gen_cmd_completion_function('make')})
+
+        ---@tag :Bexecute
+        ---@brief [[
+        ---The `:Bexecute` command runs a shell command in a new terminal
+        ---window, without trying to parse the output. This is useful to run
+        ---regular shell command with Blunder niceties like opening a new
+        ---window and handling closing it and returning to the original window.
+        ---@brief ]]
+        vim.api.nvim_create_user_command(commands_prefix .. 'execute', function(opts)
+            require'blunder'.create_window_for_terminal()
+            vim.fn.termopen(opts.args)
+        end, {nargs = 1, complete = gen_cmd_completion_function('!')})
     end
 end
 
